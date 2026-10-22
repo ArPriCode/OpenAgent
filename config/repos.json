@@ -1,0 +1,13 @@
+[
+  {
+    "repo": "sympy/sympy",
+    "enabled": false,
+    "labels": [
+      "good first issue",
+      "Easy to Fix",
+      "gsoc"
+    ],
+    "priority": 1,
+    "notes": "SymPy computer algebra system (Frequent GSoC Organization)"
+  }
+]

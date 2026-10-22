@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OS-Agent | Autonomous Open-Source Contribution System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="logo-icon">⚡</div>
+      <div class="brand-text">
+        <h1>OS-Agent</h1>
+        <span class="badge-tag">Gemini + Grok + PyGithub</span>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <div class="clock-chip">
+        <span class="clock-label">Local Time:</span>
+        <span id="live-clock" class="clock-time">--:--:--</span>
+      </div>
+      <div id="window-status-pill" class="status-pill dormant">
+        <span class="dot"></span>
+        <span id="window-status-text">Checking Window...</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button id="btn-toggle-dryrun" class="btn btn-secondary">
+        <span class="icon">🧪</span>
+        <span id="dryrun-text">Dry-Run: ON</span>
+      </button>
+      <button id="btn-run-cycle" class="btn btn-primary glow">
+        <span class="icon">▶</span>
+        <span>Run Cycle Now</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <!-- Metric Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card glass">
+        <div class="metric-header">
+          <span class="metric-title">Active Time Window</span>
+          <span class="metric-icon">⏰</span>
+        </div>
+        <div class="metric-value" id="val-time-window">12:00 - 14:00</div>
+        <div class="metric-subtext" id="val-next-window">Checking schedule...</div>
+      </div>
+
+      <div class="metric-card glass">
+        <div class="metric-header">
+          <span class="metric-title">Tracked Repositories</span>
+          <span class="metric-icon">📂</span>
+        </div>
+        <div class="metric-value" id="val-repos-count">0</div>
+        <div class="metric-subtext">GSoC orgs & target repos</div>
+      </div>
+
+      <div class="metric-card glass">
+        <div class="metric-header">
+          <span class="metric-title">Pending Human Review</span>
+          <span class="metric-icon">🛡️</span>
+        </div>
+        <div class="metric-value highlight" id="val-pending-count">0</div>
+        <div class="metric-subtext">Waiting for your sign-off</div>
+      </div>
+
+      <div class="metric-card glass">
+        <div class="metric-header">
+          <span class="metric-title">Completed PRs</span>
+          <span class="metric-icon">🚀</span>
+        </div>
+        <div class="metric-value success" id="val-completed-count">0</div>
+        <div class="metric-subtext">Raised & tracked on GitHub</div>
+      </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <div class="content-split">
+      <!-- Left Column: Scheduler & Repositories -->
+      <div class="column-left">
+        <!-- Time Window Settings -->
+        <section class="card glass">
+          <div class="card-header">
+            <div class="title-with-icon">
+              <span class="section-icon">⏱️</span>
+              <h2>Timing & Working Hours Control</h2>
+            </div>
+            <span class="badge info">Daily Schedule</span>
+          </div>
+          <p class="section-desc">
+            Define the exact hours when the agent is allowed to scan repos, fix bugs, and interact. Outside this window, it remains safely dormant.
+          </p>
+
+          <form id="time-window-form" class="time-form">
+            <div class="time-inputs-row">
+              <div class="input-group">
+                <label for="input-start-time">Window Start Time (24h)</label>
+                <input type="time" id="input-start-time" value="12:00" required>
+              </div>
+              <div class="time-arrow">➜</div>
+              <div class="input-group">
+                <label for="input-end-time">Window End Time (24h)</label>
+                <input type="time" id="input-end-time" value="14:00" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-secondary">💾 Save Schedule</button>
+              <span id="schedule-saved-badge" class="saved-badge hidden">✓ Schedule Updated</span>
+            </div>
+          </form>
+        </section>
+
+        <!-- Multi-Repository & GSoC Organizations -->
+        <section class="card glass">
+          <div class="card-header">
+            <div class="title-with-icon">
+              <span class="section-icon">🏛️</span>
+              <h2>Multi-Repo & GSoC Organizations</h2>
+            </div>
+            <button id="btn-show-add-repo" class="btn btn-sm btn-primary">+ Add Repo</button>
+          </div>
+          <p class="section-desc">
+            Add open-source projects or GSoC organizations you want the agent to contribute to.
+          </p>
+
+          <!-- Quick GSoC Preset Chips -->
+          <div class="preset-section">
+            <span class="preset-label">Quick Add Popular GSoC Orgs:</span>
+            <div class="preset-chips">
+              <button class="chip" onclick="quickAddRepo('sympy/sympy', ['good first issue', 'gsoc'])">+ SymPy</button>
+              <button class="chip" onclick="quickAddRepo('scikit-learn/scikit-learn', ['good first issue', 'Easy'])">+ Scikit-Learn</button>
+              <button class="chip" onclick="quickAddRepo('zulip/zulip', ['good first issue', 'help wanted'])">+ Zulip</button>
+              <button class="chip" onclick="quickAddRepo('django/django', ['easy pickings'])">+ Django</button>
+              <button class="chip" onclick="quickAddRepo('pallets/flask', ['good first issue'])">+ Flask</button>
+            </div>
+          </div>
+
+          <!-- Add Repo Form (Inline) -->
+          <div id="add-repo-panel" class="add-repo-panel hidden">
+            <form id="add-repo-form">
+              <div class="input-row">
+                <input type="text" id="new-repo-name" placeholder="owner/repo (e.g. psf/requests)" required>
+                <input type="text" id="new-repo-labels" placeholder="Labels (comma-separated, e.g. good first issue, bug)">
+              </div>
+              <div class="panel-buttons">
+                <button type="submit" class="btn btn-sm btn-primary">Add Repository</button>
+                <button type="button" id="btn-cancel-add-repo" class="btn btn-sm btn-secondary">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Repos List -->
+          <div class="repo-list" id="repo-list-container">
+            <!-- Dynamic repo cards injected here -->
+            <div class="empty-state">Loading repositories...</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Pending Approvals & Activity Log -->
+      <div class="column-right">
+        <!-- Human In The Loop Queue -->
+        <section class="card glass">
+          <div class="card-header">
+            <div class="title-with-icon">
+              <span class="section-icon">🛡️</span>
+              <h2>Human-in-the-Loop Review Queue</h2>
+            </div>
+            <span id="pending-badge" class="badge warning">0 Pending</span>
+          </div>
+          <p class="section-desc">
+            Review code changes generated by Gemini and PR descriptions drafted by Grok before approving commits and PR creation.
+          </p>
+
+          <div id="pending-approvals-container" class="pending-list">
+            <div class="empty-state">
+              <span class="empty-icon">✨</span>
+              <p>No actions waiting for review. The agent is in sync!</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Completed Contributions -->
+        <section class="card glass">
+          <div class="card-header">
+            <div class="title-with-icon">
+              <span class="section-icon">🎉</span>
+              <h2>Raised Contributions & Pull Requests</h2>
+            </div>
+          </div>
+          <div id="completed-container" class="completed-list">
+            <div class="empty-state">
+              <p>No PRs created yet. Run a contribution cycle during your active window!</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Activity & Event Log -->
+        <section class="card glass log-card">
+          <div class="card-header">
+            <div class="title-with-icon">
+              <span class="section-icon">📜</span>
+              <h2>Real-Time Activity Log</h2>
+            </div>
+            <span class="badge live-badge">● LIVE</span>
+          </div>
+          <div class="log-stream" id="log-stream">
+            <div class="log-line info">[System] OS-Agent initialized and connected.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
