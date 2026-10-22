@@ -157,19 +157,23 @@ class GitManager:
         Executes local verification (python py_compile on modified files or pytest).
         """
         logs = []
-        # 1. Quick Python syntax compilation
-        try:
-            res = subprocess.run(
-                ["python3", "-m", "compileall", "-q", str(repo_dir)],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            if res.returncode != 0:
-                return False, f"Syntax Error: {res.stderr}"
-            logs.append("Syntax check passed.")
-        except Exception as e:
-            logs.append(f"Compile check warning: {e}")
+        # 1. Quick in-process Python AST syntax validation
+        import ast
+        syntax_errors = []
+        for py_file in repo_dir.rglob("*.py"):
+            if any(part in py_file.parts for part in [".git", "venv", ".venv", "build", "dist", "__pycache__"]):
+                continue
+            try:
+                with open(py_file, "r", encoding="utf-8", errors="ignore") as f:
+                    ast.parse(f.read(), filename=str(py_file))
+            except SyntaxError as se:
+                syntax_errors.append(f"{py_file.name}:{se.lineno} - {se.msg}")
+            except Exception:
+                pass
+
+        if syntax_errors:
+            return False, f"Syntax Error: {'; '.join(syntax_errors[:2])}"
+        logs.append("Syntax check passed.")
 
         # 2. Pytest if present
         pytest_ini = repo_dir / "pytest.ini"
